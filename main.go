@@ -3,6 +3,7 @@ package main
 import (
 	"flag"
 	"log"
+	"os"
 	"regexp"
 	"time"
 )
@@ -21,8 +22,10 @@ func main() {
 	flag.Usage = usage
 	flag.Parse()
 
+	logOut := log.New(os.Stdout, "", log.LstdFlags)
+
 	if *DryRun {
-		log.Println("[INFO] dry run enabled")
+		logOut.Println("[INFO] dry run enabled")
 	}
 
 	drydock, err := NewDryDock(*DockerHost)
@@ -50,10 +53,10 @@ func main() {
 		log.Fatalf("[FATAL] images in use: %s\n", err)
 	}
 
-	log.Printf("[INFO] %d images scheduled for deletion\n", len(images))
+	logOut.Printf("[INFO] %d images scheduled for deletion\n", len(images))
 	for _, image := range images {
 		if imagesInUse.Exist(image) {
-			log.Printf("[INFO] skipping %s, in use\n", image)
+			log.Printf("[WARN] skipping %s, in use\n", image)
 			continue
 		}
 
@@ -64,6 +67,6 @@ func main() {
 			}
 		}
 
-		log.Printf("[INFO] deleted image %s\n", image)
+		logOut.Printf("[INFO] deleted image %s\n", image)
 	}
 }
