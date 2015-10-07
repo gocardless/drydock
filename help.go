@@ -4,7 +4,7 @@ import (
 	"fmt"
 )
 
-const VERSION = "0.0.1"
+const VERSION = "0.0.2"
 
 func usage() {
 	fmt.Printf("DryDock %s\n", VERSION)
