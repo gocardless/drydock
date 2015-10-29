@@ -1,17 +1,19 @@
 package main
 
 import (
+	"log"
 	"regexp"
+	"sort"
 	"time"
 
 	"github.com/fsouza/go-dockerclient"
 )
 
 type DryDock struct {
-	Age     time.Duration  // image age
-	Pattern *regexp.Regexp // repo tag pattern
-
-	docker *docker.Client // docker client
+	Age     time.Duration
+	Keep    int
+	Pattern *regexp.Regexp
+	docker  *docker.Client
 }
 
 // create a new DryDock assignment connected to Docker server
@@ -29,27 +31,55 @@ func NewDryDock(endpoint string) (*DryDock, error) {
 	}, nil
 }
 
-// list images older than age
+// Sorts docker.APIImages, newest first
+type byCreatedNewestFirst []docker.APIImages
+
+func (a byCreatedNewestFirst) Len() int           { return len(a) }
+func (a byCreatedNewestFirst) Swap(i, j int)      { a[i], a[j] = a[j], a[i] }
+func (a byCreatedNewestFirst) Less(i, j int) bool { return a[i].Created > a[j].Created }
+
+// list images older than Age, excluding the newest Keep images
 func (dd DryDock) ListImages() (Images, error) {
 	images, err := dd.docker.ListImages(docker.ListImagesOptions{All: false})
 	if err != nil {
 		return nil, err
 	}
 
-	before := time.Now().Add(-(dd.Age))
-
-	var imgs Images
+	var imagesMatchingFilter []docker.APIImages
 	for _, image := range images {
+		if dd.matchRepoTags(image) {
+			imagesMatchingFilter = append(imagesMatchingFilter, image)
+		}
+	}
+	log.Printf("[INFO] %d images matched pattern", len(imagesMatchingFilter))
+
+	sort.Sort(byCreatedNewestFirst(imagesMatchingFilter))
+
+	cutoff := time.Now().Add(-(dd.Age))
+	var deleteStartingAtIndex int
+	for i, image := range imagesMatchingFilter {
 		created := time.Unix(image.Created, 0)
 
-		if before.Before(created) || !dd.matchRepoTags(image) {
-			continue
+		if i >= dd.Keep && created.Before(cutoff) {
+			deleteStartingAtIndex = i
+			break
 		}
 
-		imgs = append(imgs, image.ID)
+		if i == len(imagesMatchingFilter)-1 {
+			log.Printf("[INFO] No images met keep/age criteria")
+			return Images{}, nil
+		}
 	}
 
-	return imgs, nil
+	imagesForDeletion := imagesMatchingFilter[deleteStartingAtIndex:len(imagesMatchingFilter)]
+	log.Printf("[INFO] %d images met keep/age criteria", len(imagesForDeletion))
+
+	var imageIds Images
+	for _, image := range imagesForDeletion {
+		imageIds = append(imageIds, image.ID)
+	}
+
+	return imageIds, nil
 }
 
 // list images used by containers
