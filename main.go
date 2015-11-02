@@ -14,6 +14,7 @@ import (
 var (
 	DryRun       = flag.Bool("dry-run", false, "don't run delete functions")
 	ImageAge     = flag.String("age", "48h", "delete images older than age")
+	ImagesToKeep = flag.Int("keep", 10, "keep at least this many images")
 	ImagePattern = flag.String("pattern", "^.*$", "match image names")
 	DockerHost   = flag.String("docker", "tcp://127.0.0.1:2375", "docker endpoint")
 )
@@ -37,6 +38,8 @@ func main() {
 	if err != nil {
 		log.Fatalf("[FATAL] age: %s\n", err)
 	}
+
+	drydock.Keep = *ImagesToKeep
 
 	drydock.Pattern, err = regexp.Compile(*ImagePattern)
 	if err != nil {
