@@ -2,6 +2,7 @@ package main
 
 import (
 	"log"
+	"os"
 	"regexp"
 	"sort"
 	"time"
@@ -14,6 +15,7 @@ type DryDock struct {
 	Keep    int
 	Pattern *regexp.Regexp
 	docker  *docker.Client
+	logOut  *log.Logger
 }
 
 // create a new DryDock assignment connected to Docker server
@@ -28,6 +30,7 @@ func NewDryDock(endpoint string) (*DryDock, error) {
 		Pattern: regexp.MustCompile(`^.*$`),
 
 		docker: client,
+		logOut: log.New(os.Stdout, "", log.LstdFlags),
 	}, nil
 }
 
@@ -51,7 +54,7 @@ func (dd DryDock) ListImages() (Images, error) {
 			imagesMatchingFilter = append(imagesMatchingFilter, image)
 		}
 	}
-	log.Printf("[INFO] %d images matched pattern", len(imagesMatchingFilter))
+	dd.logOut.Printf("[INFO] %d images matched pattern", len(imagesMatchingFilter))
 
 	sort.Sort(byCreatedNewestFirst(imagesMatchingFilter))
 
@@ -66,13 +69,13 @@ func (dd DryDock) ListImages() (Images, error) {
 		}
 
 		if i == len(imagesMatchingFilter)-1 {
-			log.Printf("[INFO] No images met keep/age criteria")
+			dd.logOut.Printf("[INFO] No images met keep/age criteria")
 			return Images{}, nil
 		}
 	}
 
 	imagesForDeletion := imagesMatchingFilter[deleteStartingAtIndex:len(imagesMatchingFilter)]
-	log.Printf("[INFO] %d images met keep/age criteria", len(imagesForDeletion))
+	dd.logOut.Printf("[INFO] %d images met keep/age criteria", len(imagesForDeletion))
 
 	var imageIds Images
 	for _, image := range imagesForDeletion {
