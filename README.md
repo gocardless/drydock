@@ -17,3 +17,12 @@ Usage
       --age      <48h>                   delete images older than age
       --pattern  <^.*$>                  pattern for images to be deleted
       --docker   <tcp://127.0.0.1:2375>  docker host endpoint
+
+Development
+-----------
+
+```
+$ gom install # install dependencies
+$ make        # build
+$ make deb    # build debian package
+```

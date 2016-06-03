@@ -1,0 +1,1 @@
+gom 'github.com/fsouza/go-dockerclient', :commit => '9df1f25d542e79d7909ef321b5c13c5d34ea7f1d'
