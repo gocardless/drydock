@@ -24,3 +24,9 @@ _testmain.go
 *.exe
 *.test
 *.prof
+
+drydock.linux_amd64
+cover.out
+_vendor
+.bundle
+*.deb

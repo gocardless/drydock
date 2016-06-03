@@ -8,6 +8,8 @@ import (
 	"time"
 )
 
+var version string
+
 // list images older than age matching match
 // remove images older than age that aren't running
 
@@ -17,6 +19,7 @@ var (
 	ImagesToKeep = flag.Int("keep", 10, "keep at least this many images")
 	ImagePattern = flag.String("pattern", "^.*$", "match image names")
 	DockerHost   = flag.String("docker", "tcp://127.0.0.1:2375", "docker endpoint")
+	Version      = flag.Bool("version", false, "version")
 )
 
 func main() {
@@ -24,6 +27,11 @@ func main() {
 	flag.Parse()
 
 	logOut := log.New(os.Stdout, "", log.LstdFlags)
+
+	if *Version {
+		logOut.Println("drydock version " + version)
+		os.Exit(0)
+	}
 
 	if *DryRun {
 		logOut.Println("[INFO] dry run enabled")
